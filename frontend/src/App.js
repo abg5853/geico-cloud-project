@@ -1,41 +1,87 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react'
+import { useAuth } from 'react-oidc-context'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+
+import Home from './pages/Home'
+import About from './pages/About'
+import Claims from './pages/Claims'
+import { AllClaims, ClaimDetail } from './pages/AllClaims'
+import Notifications from './pages/Notifications'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import ChatBubble from './components/ChatBubble'
 
 function App() {
-  const [claims, setClaims] = useState([]);
+  const auth = useAuth()
 
-useEffect(() => {
-  fetch("http://18.204.75.139:3000/api/claims")
-    .then((res) => res.json())
-    .then((data) => {
-      console.log("✅ Claims received:", data); // <-- add this
-      setClaims(data);
-    })
-    .catch((err) => console.error("❌ Error fetching claims:", err));
-	}, []);
+  // 1. while loading / error
+  if (auth.isLoading) return <div className="p-8 text-center">Loading…</div>
+  if (auth.error)   return <div className="p-8 text-center text-red-600">Error: {auth.error.message}</div>
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-4xl font-bold text-center text-blue-600 mb-8">
-        🚗 GEICO Claim Viewer
-      </h1>
+    <BrowserRouter>
+      <div className="relative min-h-screen flex flex-col bg-[#e8f4f8]">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {claims.map(claim => (
-          <div key={claim.claimId} className="bg-white shadow-lg rounded-xl p-4">
-            <h2 className="text-xl font-semibold text-gray-800">
-              Claim #{claim.claimId}
-            </h2>
-            <p className="text-sm text-gray-500">
-              Status: {claim.status}
-            </p>
-            <p className="text-sm text-gray-500">
-              Agent: {claim.assignedAgent}
-            </p>
+        {/* NAVBAR */}
+        <nav className="bg-[#cdedf6] shadow">
+          <div className="container mx-auto flex items-center justify-between p-4">
+            <Link to="/" className="text-2xl font-bold text-gray-800">
+              GEICO Cloud
+            </Link>
+
+            <div className="flex items-center space-x-4">
+              <Link to="/"         className="text-gray-700 hover:text-gray-900">Home</Link>
+              <Link to="/about"    className="text-gray-700 hover:text-gray-900">About</Link>
+              <Link to="/claims"   className="text-gray-700 hover:text-gray-900">My Claim</Link>
+              <Link to="/all-claims" className="text-gray-700 hover:text-gray-900">All Claims</Link>
+              <Link to="/notifications" className="text-gray-700 hover:text-gray-900">Notifications</Link>
+
+              {auth.isAuthenticated ? (
+                <>
+                  <span className="text-gray-700">Hi, {auth.user?.profile.email}</span>
+                  <button
+                    onClick={() => auth.removeUser()}
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => auth.signinRedirect()}
+                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
           </div>
-        ))}
+        </nav>
+
+        {/* MAIN CONTENT */}
+        <main className="flex-grow container mx-auto px-6 py-8">
+          <Routes>
+            <Route path="/"               element={<Home />} />
+            <Route path="/about"          element={<About />} />
+            <Route path="/claims"         element={<Claims />} />
+            <Route path="/all-claims"     element={<AllClaims />} />
+            <Route path="/all-claims/:id" element={<ClaimDetail />} />
+            <Route path="/notifications"  element={<Notifications />} />
+            <Route path="/login"          element={<Login />} />
+            <Route path="/signup"         element={<Signup />} />
+          </Routes>
+        </main>
+
+        {/* FOOTER */}
+        <footer className="bg-[#cdedf6] text-center py-6">
+          © 2025 GEICO Cloud. All rights reserved.
+        </footer>
+
+        {/* CHAT BUBBLE */}
+        <ChatBubble />
       </div>
-    </div>
-  );
+    </BrowserRouter>
+  )
 }
 
-export default App;
+export default App
